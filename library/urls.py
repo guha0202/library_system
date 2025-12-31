@@ -11,4 +11,5 @@ router.register(r'categories', views.CategoryViewSet)
 urlpatterns = [
     path('', include(router.urls)),
     path('register/', views.RegisterView.as_view(), name='register'),
+    path('me/', views.CurrentUserView.as_view(), name='current-user'),
 ]

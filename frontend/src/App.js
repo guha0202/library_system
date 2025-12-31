@@ -25,10 +25,19 @@ function App() {
   
   // 用户状态
   const [user, setUser] = useState(null); // null 表示未登录
+  const [userInfo, setUserInfo] = useState(null); // 详细用户信息
+  const [isGuest, setIsGuest] = useState(false); // 是否是游客
+  const [isAdmin, setIsAdmin] = useState(false); // 是否是管理员
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [isRegistering, setIsRegistering] = useState(false); // 是否在注册页面
+
+  // 个人资料编辑状态
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editEmail, setEditEmail] = useState('');
+  const [editPhoneNumber, setEditPhoneNumber] = useState('');
 
   // 页面视图状态: 'home' | 'profile' | 'detail'
   const [view, setView] = useState('home');
@@ -48,9 +57,25 @@ function App() {
     const savedUsername = localStorage.getItem('username');
     if (token && savedUsername) {
       setUser(savedUsername);
+      fetchCurrentUser(); // 获取用户详细信息（包括权限）
       fetchBooks();
     }
   }, []);
+
+  // 获取当前用户信息
+  const fetchCurrentUser = () => {
+    axios.get('http://127.0.0.1:8000/api/me/')
+      .then(response => {
+        setUserInfo(response.data);
+        setIsAdmin(response.data.is_staff);
+        // 初始化编辑表单数据
+        setEditEmail(response.data.email || '');
+        setEditPhoneNumber(response.data.phone_number || '');
+      })
+      .catch(err => {
+        console.error("Error fetching user info:", err);
+      });
+  };
 
   const fetchBooks = (url) => {
     setLoading(true);
@@ -130,6 +155,9 @@ function App() {
       localStorage.setItem('username', username);
       setUser(username);
       setError(null);
+      
+      // 登录成功后获取权限信息
+      fetchCurrentUser();
       fetchBooks();
     })
     .catch(err => {
@@ -143,7 +171,8 @@ function App() {
     axios.post('http://127.0.0.1:8000/api/register/', {
       username: username,
       password: password,
-      email: email
+      email: email,
+      phone_number: phoneNumber
     })
     .then(response => {
       toast.success("注册成功！请登录。");
@@ -156,19 +185,53 @@ function App() {
     });
   };
 
+  const handleUpdateProfile = (e) => {
+    e.preventDefault();
+    axios.patch('http://127.0.0.1:8000/api/me/', {
+      email: editEmail,
+      phone_number: editPhoneNumber
+    })
+    .then(response => {
+      setUserInfo(response.data);
+      setIsEditingProfile(false);
+      toast.success("个人信息更新成功！");
+    })
+    .catch(err => {
+      console.error("Update profile error:", err);
+      toast.error("更新失败：" + (err.response?.data?.detail || "未知错误"));
+    });
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('username');
     setUser(null);
+    setUserInfo(null);
+    setIsGuest(false);
+    setIsAdmin(false);
     setBooks([]);
     setMyBooks([]);
     setView('home');
     setUsername('');
     setPassword('');
+    setEmail('');
+    setPhoneNumber('');
     setSearchQuery('');
     setSelectedBook(null);
-    toast.info("您已退出登录");
+    setIsEditingProfile(false);
+    toast.info(isGuest ? "已退出游客模式" : "您已退出登录");
+  };
+
+  const handleGuestLogin = () => {
+    // 确保清除可能存在的残留 Token，避免无效 Token 导致后端 401 错误
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('username');
+
+    setIsGuest(true);
+    fetchBooks();
+    toast.info("您正在以游客身份浏览");
   };
 
   // 处理借阅操作
@@ -247,6 +310,27 @@ function App() {
       });
   };
 
+  // 处理删除操作（管理员专用）
+  const handleDeleteBook = (bookId, bookTitle) => {
+    if (!window.confirm(`确定要删除《${bookTitle}》吗？此操作不可恢复。`)) {
+      return;
+    }
+
+    axios.delete(`http://127.0.0.1:8000/api/books/${bookId}/`)
+      .then(() => {
+        toast.success(`已删除《${bookTitle}》`);
+        // 从列表中移除
+        setBooks(prev => prev.filter(b => b.id !== bookId));
+        if (selectedBook && selectedBook.id === bookId) {
+          navigateToHome();
+        }
+      })
+      .catch(err => {
+        console.error("Delete error:", err);
+        toast.error("删除失败：" + (err.response?.data?.detail || "权限不足或未知错误"));
+      });
+  };
+
   // 导航函数
   const navigateToProfile = () => {
     setView('profile');
@@ -277,6 +361,7 @@ function App() {
 
   // 根据状态渲染按钮
   const renderButton = (book) => {
+    // 1. 已借阅（仅登录用户可能）
     if (book.user_status === 'BORROWED') {
       return (
         <button 
@@ -289,32 +374,51 @@ function App() {
           归还
         </button>
       );
-    } else if (book.user_status === 'NO_STOCK' || book.quantity <= 0) {
+    } 
+    
+    // 2. 无库存
+    if (book.quantity <= 0) {
       return (
         <button className="btn btn-secondary w-100" disabled>
           暂无库存
         </button>
       );
-    } else {
+    }
+
+    // 3. 游客模式（有库存）
+    if (isGuest) {
       return (
         <button 
-          className="btn btn-outline-success w-100"
+          className="btn btn-outline-primary w-100"
           onClick={(e) => {
             e.stopPropagation();
-            handleBorrow(book.id, book.title);
+            toast.info("请先登录后再借阅书籍");
           }}
         >
-          借阅
+          登录后借阅
         </button>
       );
     }
+
+    // 4. 普通借阅（登录用户且有库存）
+    return (
+      <button 
+        className="btn btn-outline-success w-100"
+        onClick={(e) => {
+          e.stopPropagation();
+          handleBorrow(book.id, book.title);
+        }}
+      >
+        借阅
+      </button>
+    );
   };
 
   // 默认封面图片 URL
   const DEFAULT_COVER = "/book_cover.ico";
 
-  // 如果未登录，显示登录/注册表单
-  if (!user) {
+  // 如果未登录且不是游客，显示登录/注册表单
+  if (!user && !isGuest) {
     return (
       <div className="container mt-5" style={{ maxWidth: '400px' }}>
         <ToastContainer position="top-center" />
@@ -333,15 +437,26 @@ function App() {
             />
           </div>
           {isRegistering && (
-            <div className="mb-3">
-              <label className="form-label">邮箱 (可选)</label>
-              <input 
-                type="email" 
-                className="form-control" 
-                value={email} 
-                onChange={e => setEmail(e.target.value)} 
-              />
-            </div>
+            <>
+              <div className="mb-3">
+                <label className="form-label">邮箱 (可选)</label>
+                <input 
+                  type="email" 
+                  className="form-control" 
+                  value={email} 
+                  onChange={e => setEmail(e.target.value)} 
+                />
+              </div>
+              <div className="mb-3">
+                <label className="form-label">电话号码 (可选)</label>
+                <input 
+                  type="tel" 
+                  className="form-control" 
+                  value={phoneNumber} 
+                  onChange={e => setPhoneNumber(e.target.value)} 
+                />
+              </div>
+            </>
           )}
           <div className="mb-3">
             <label className="form-label">密码</label>
@@ -369,6 +484,15 @@ function App() {
             {isRegistering ? '已有账号？去登录' : '没有账号？去注册'}
           </button>
         </div>
+
+        <div className="mt-3">
+          <button 
+            className="btn btn-outline-secondary w-100"
+            onClick={handleGuestLogin}
+          >
+            以游客身份浏览
+          </button>
+        </div>
       </div>
     );
   }
@@ -379,10 +503,30 @@ function App() {
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1 style={{cursor: 'pointer'}} onClick={navigateToHome}>📚 图书馆借书系统</h1>
         <div>
+          {isAdmin && (
+            <a 
+              href="http://127.0.0.1:8000/admin/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="btn btn-warning btn-sm me-3 fw-bold"
+            >
+              ⚙️ 后台管理
+            </a>
+          )}
           <span className="me-3">
-            欢迎, <button className="btn btn-link text-decoration-none fw-bold" onClick={navigateToProfile}>{user}</button>
+            欢迎, 
+            {isGuest ? (
+              <span className="fw-bold ms-1">游客</span>
+            ) : (
+              <>
+                <button className="btn btn-link text-decoration-none fw-bold" onClick={navigateToProfile}>{user}</button>
+                {isAdmin && <span className="badge bg-danger ms-1">管理员</span>}
+              </>
+            )}
           </span>
-          <button className="btn btn-outline-danger btn-sm" onClick={handleLogout}>退出登录</button>
+          <button className="btn btn-outline-danger btn-sm" onClick={handleLogout}>
+            {isGuest ? '去登录' : '退出登录'}
+          </button>
         </div>
       </div>
       
@@ -449,7 +593,20 @@ function App() {
                     </div>
                   </div>
                   <div className="card-footer bg-transparent border-top-0">
-                    {renderButton(book)}
+                    <div className="d-grid gap-2">
+                      {renderButton(book)}
+                      {isAdmin && (
+                        <button 
+                          className="btn btn-outline-danger btn-sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteBook(book.id, book.title);
+                          }}
+                        >
+                          删除图书
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -478,6 +635,82 @@ function App() {
 
       {!loading && !error && view === 'profile' && (
         <div>
+          {userInfo && (
+            <div className="card mb-4 shadow-sm">
+              <div className="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 className="mb-0">👤 个人档案</h5>
+                {!isEditingProfile && (
+                  <button 
+                    className="btn btn-sm btn-outline-primary"
+                    onClick={() => setIsEditingProfile(true)}
+                  >
+                    编辑资料
+                  </button>
+                )}
+              </div>
+              <div className="card-body">
+                {isEditingProfile ? (
+                  <form onSubmit={handleUpdateProfile}>
+                    <div className="row mb-3">
+                      <div className="col-md-4">
+                        <label className="form-label text-muted">用户名</label>
+                        <input type="text" className="form-control" value={userInfo.username} disabled />
+                        <div className="form-text">用户名不可修改</div>
+                      </div>
+                      <div className="col-md-4">
+                        <label className="form-label text-muted">邮箱</label>
+                        <input 
+                          type="email" 
+                          className="form-control" 
+                          value={editEmail} 
+                          onChange={e => setEditEmail(e.target.value)}
+                        />
+                      </div>
+                      <div className="col-md-4">
+                        <label className="form-label text-muted">电话号码</label>
+                        <input 
+                          type="tel" 
+                          className="form-control" 
+                          value={editPhoneNumber} 
+                          onChange={e => setEditPhoneNumber(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="d-flex justify-content-end gap-2">
+                      <button 
+                        type="button" 
+                        className="btn btn-secondary" 
+                        onClick={() => {
+                          setIsEditingProfile(false);
+                          setEditEmail(userInfo.email || '');
+                          setEditPhoneNumber(userInfo.phone_number || '');
+                        }}
+                      >
+                        取消
+                      </button>
+                      <button type="submit" className="btn btn-primary">保存修改</button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="row">
+                    <div className="col-md-4">
+                      <p className="mb-1 text-muted">用户名</p>
+                      <p className="fw-bold">{userInfo.username}</p>
+                    </div>
+                    <div className="col-md-4">
+                      <p className="mb-1 text-muted">邮箱</p>
+                      <p className="fw-bold">{userInfo.email || <span className="text-muted fst-italic">未填写</span>}</p>
+                    </div>
+                    <div className="col-md-4">
+                      <p className="mb-1 text-muted">电话号码</p>
+                      <p className="fw-bold">{userInfo.phone_number || <span className="text-muted fst-italic">未填写</span>}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <ul className="nav nav-tabs mb-4">
             <li className="nav-item">
               <button 
@@ -640,6 +873,14 @@ function App() {
                   <div className="d-inline-block w-50 me-2">
                     {renderButton(selectedBook)}
                   </div>
+                  {isAdmin && (
+                    <button 
+                      className="btn btn-danger me-2"
+                      onClick={() => handleDeleteBook(selectedBook.id, selectedBook.title)}
+                    >
+                      删除图书
+                    </button>
+                  )}
                   <button className="btn btn-secondary" onClick={navigateToHome}>返回列表</button>
                 </div>
               </div>

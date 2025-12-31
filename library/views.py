@@ -3,10 +3,11 @@ from django.utils import timezone
 from rest_framework import viewsets, status, generics, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from django.contrib.auth.models import User
 from .models import Book, Author, Publisher, Category, Borrow
 from .serializers import BookSerializer, AuthorSerializer, PublisherSerializer, CategorySerializer, UserSerializer, BorrowSerializer
+from .permissions import IsAdminOrReadOnly
 
 # Create your views here.
 
@@ -15,16 +16,33 @@ class RegisterView(generics.CreateAPIView):
     permission_classes = (AllowAny,)
     serializer_class = UserSerializer
 
+class CurrentUserView(generics.RetrieveUpdateAPIView):
+    """
+    获取或更新当前登录用户的信息
+    GET /api/me/
+    PUT/PATCH /api/me/
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserSerializer
+
+    def get_object(self):
+        return self.request.user
+
 class BookViewSet(viewsets.ModelViewSet):
     queryset = Book.objects.all().order_by('-publication_date')
     serializer_class = BookSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ['title', 'authors__name', 'isbn', 'publisher__name', 'categories__name']
     
-    # 默认需要登录才能操作，但查看列表(list)和详情(retrieve)可以公开
+    # 权限控制
     def get_permissions(self):
+        # 1. 允许任何人浏览 (GET)
         if self.action in ['list', 'retrieve']:
             return [AllowAny()]
+        # 2. 只有管理员可以管理图书 (POST, PUT, DELETE)
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [IsAdminUser()]
+        # 3. 其他操作（如借书、还书）需要登录用户
         return [IsAuthenticated()]
 
     @action(detail=True, methods=['post'])
@@ -157,11 +175,14 @@ class BookViewSet(viewsets.ModelViewSet):
 class AuthorViewSet(viewsets.ModelViewSet):
     queryset = Author.objects.all().order_by('name')
     serializer_class = AuthorSerializer
+    permission_classes = [IsAdminOrReadOnly]
 
 class PublisherViewSet(viewsets.ModelViewSet):
     queryset = Publisher.objects.all().order_by('name')
     serializer_class = PublisherSerializer
+    permission_classes = [IsAdminOrReadOnly]
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all().order_by('name')
     serializer_class = CategorySerializer
+    permission_classes = [IsAdminOrReadOnly]

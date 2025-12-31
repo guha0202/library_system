@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 # Create your models here.
 
@@ -72,6 +74,18 @@ class Reader(models.Model):
     class Meta:
         verbose_name = "读者"
         verbose_name_plural = verbose_name
+
+@receiver(post_save, sender=User)
+def create_user_reader(sender, instance, created, **kwargs):
+    if created:
+        Reader.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def save_user_reader(sender, instance, **kwargs):
+    # 确保 reader 存在，防止旧数据没有 reader
+    if not hasattr(instance, 'reader'):
+        Reader.objects.create(user=instance)
+    instance.reader.save()
 
 class Borrow(models.Model):
     """借阅记录模型"""

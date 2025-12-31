@@ -1,21 +1,60 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Book, Author, Publisher, Category, Borrow
+from .models import Book, Author, Publisher, Category, Borrow, Reader
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
+    phone_number = serializers.CharField(source='reader.phone_number', required=False, allow_blank=True)
 
     class Meta:
         model = User
-        fields = ('username', 'password', 'email')
+        fields = ('username', 'password', 'email', 'is_staff', 'phone_number')
+        read_only_fields = ('is_staff',)
 
     def create(self, validated_data):
+        # 提取 phone_number
+        # 注意：由于使用了 source='reader.phone_number'，DRF 会将数据放入 reader 字典中
+        reader_data = validated_data.pop('reader', {})
+        phone_number = reader_data.get('phone_number', '')
+        
         user = User.objects.create_user(
             username=validated_data['username'],
-            email=validated_data.get('email', ''),
-            password=validated_data['password']
+            password=validated_data['password'],
+            email=validated_data.get('email', '')
         )
+        
+        # 更新自动创建的 Reader 对象
+        if phone_number:
+            # 确保 reader 存在 (虽然信号应该已经创建了它)
+            if not hasattr(user, 'reader'):
+                Reader.objects.create(user=user)
+            user.reader.phone_number = phone_number
+            user.reader.save()
+            
         return user
+
+    def update(self, instance, validated_data):
+        # 处理 reader 数据
+        reader_data = validated_data.pop('reader', {})
+        phone_number = reader_data.get('phone_number')
+
+        # 更新 User 字段
+        instance.email = validated_data.get('email', instance.email)
+        # 如果提供了密码，则更新密码
+        password = validated_data.get('password')
+        if password:
+            instance.set_password(password)
+        instance.save()
+
+        # 更新 Reader 字段
+        if phone_number is not None:
+            # 确保 reader 存在
+            if not hasattr(instance, 'reader'):
+                Reader.objects.create(user=instance)
+            instance.reader.phone_number = phone_number
+            instance.reader.save()
+
+        return instance
 
 class AuthorSerializer(serializers.ModelSerializer):
     class Meta:
