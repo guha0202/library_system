@@ -4,6 +4,13 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+// 定义 API 基础 URL
+// 如果是开发环境(npm start)，使用 localhost:8000
+// 如果是生产环境(构建后)，使用当前域名(相对路径)
+const API_BASE_URL = process.env.NODE_ENV === 'development' 
+  ? 'http://127.0.0.1:8000' 
+  : '';
+
 // 配置 axios 拦截器，自动在请求头中添加 Token
 axios.interceptors.request.use(
   config => {
@@ -64,7 +71,7 @@ function App() {
 
   // 获取当前用户信息
   const fetchCurrentUser = () => {
-    axios.get('http://127.0.0.1:8000/api/me/')
+    axios.get(`${API_BASE_URL}/api/me/`)
       .then(response => {
         setUserInfo(response.data);
         setIsAdmin(response.data.is_staff);
@@ -83,8 +90,8 @@ function App() {
     // 如果没有提供 URL，则根据当前的 searchQuery 构建默认 URL
     if (!url) {
       url = searchQuery 
-        ? `http://127.0.0.1:8000/api/books/?search=${encodeURIComponent(searchQuery)}`
-        : 'http://127.0.0.1:8000/api/books/';
+        ? `${API_BASE_URL}/api/books/?search=${encodeURIComponent(searchQuery)}`
+        : `${API_BASE_URL}/api/books/`;
     }
 
     axios.get(url)
@@ -110,7 +117,7 @@ function App() {
 
   const fetchMyBooks = () => {
     setLoading(true);
-    axios.get('http://127.0.0.1:8000/api/books/my_borrowed_books/')
+    axios.get(`${API_BASE_URL}/api/books/my_borrowed_books/`)
       .then(response => {
         setMyBooks(response.data);
         setLoading(false);
@@ -123,7 +130,7 @@ function App() {
 
   const fetchBorrowHistory = (url) => {
     if (!url) {
-      url = 'http://127.0.0.1:8000/api/books/borrow_history/';
+      url = `${API_BASE_URL}/api/books/borrow_history/`;
     }
     
     axios.get(url)
@@ -145,7 +152,7 @@ function App() {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    axios.post('http://127.0.0.1:8000/api/token/', {
+    axios.post(`${API_BASE_URL}/api/token/`, {
       username: username,
       password: password
     })
@@ -168,7 +175,7 @@ function App() {
 
   const handleRegister = (e) => {
     e.preventDefault();
-    axios.post('http://127.0.0.1:8000/api/register/', {
+    axios.post(`${API_BASE_URL}/api/register/`, {
       username: username,
       password: password,
       email: email,
@@ -187,7 +194,7 @@ function App() {
 
   const handleUpdateProfile = (e) => {
     e.preventDefault();
-    axios.patch('http://127.0.0.1:8000/api/me/', {
+    axios.patch(`${API_BASE_URL}/api/me/`, {
       email: editEmail,
       phone_number: editPhoneNumber
     })
@@ -236,7 +243,7 @@ function App() {
 
   // 处理借阅操作
   const handleBorrow = (bookId, bookTitle) => {
-    axios.post(`http://127.0.0.1:8000/api/books/${bookId}/borrow/`)
+    axios.post(`${API_BASE_URL}/api/books/${bookId}/borrow/`)
       .then(response => {
         // 借阅成功，更新本地状态中的库存数量和用户状态
         const updatedBooks = books.map(book => {
@@ -270,7 +277,7 @@ function App() {
 
   // 处理归还操作
   const handleReturn = (bookId, bookTitle) => {
-    axios.post(`http://127.0.0.1:8000/api/books/${bookId}/return_book/`)
+    axios.post(`${API_BASE_URL}/api/books/${bookId}/return_book/`)
       .then(response => {
         // 归还成功，更新本地状态
         const updatedBooks = books.map(book => {
@@ -316,7 +323,7 @@ function App() {
       return;
     }
 
-    axios.delete(`http://127.0.0.1:8000/api/books/${bookId}/`)
+    axios.delete(`${API_BASE_URL}/api/books/${bookId}/`)
       .then(() => {
         toast.success(`已删除《${bookTitle}》`);
         // 从列表中移除
@@ -344,7 +351,7 @@ function App() {
     setSearchQuery('');
     setSelectedBook(null);
     // 清空搜索并重新获取第一页
-    fetchBooks('http://127.0.0.1:8000/api/books/');
+    fetchBooks(`${API_BASE_URL}/api/books/`);
   };
 
   const navigateToDetail = (book) => {
@@ -505,7 +512,7 @@ function App() {
         <div>
           {isAdmin && (
             <a 
-              href="http://127.0.0.1:8000/admin/" 
+              href={`${API_BASE_URL}/admin/`} 
               target="_blank" 
               rel="noopener noreferrer"
               className="btn btn-warning btn-sm me-3 fw-bold"
@@ -558,7 +565,7 @@ function App() {
                   type="button"
                   onClick={() => {
                     setSearchQuery('');
-                    fetchBooks('http://127.0.0.1:8000/api/books/');
+                    fetchBooks(`${API_BASE_URL}/api/books/`);
                   }}
                 >
                   清除
