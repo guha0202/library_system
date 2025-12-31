@@ -1,0 +1,152 @@
+[
+    {
+        "title": "Python Crash Course",
+        "isbn": "9781593276034",
+        "publisher": "O'Reilly Media",
+        "authors": ["Eric Matthes"],
+        "categories": ["Computer Science"],
+        "pub_date": "2015-11-01",
+        "summary": "A hands-on, project-based introduction to programming.",
+        "quantity": 10
+    },
+    {
+        "title": "Clean Code",
+        "isbn": "9780132350884",
+        "publisher": "Prentice Hall",
+        "authors": ["Robert C. Martin"],
+        "categories": ["Computer Science"],
+        "pub_date": "2008-08-01",
+        "summary": "A Handbook of Agile Software Craftsmanship.",
+        "quantity": 5
+    },
+    {
+        "title": "Dune",
+        "isbn": "9780441172719",
+        "publisher": "Chilton Books",
+        "authors": ["Frank Herbert"],
+        "categories": ["Science Fiction"],
+        "pub_date": "1965-08-01",
+        "summary": "Set on the desert planet Arrakis, Dune is the story of the boy Paul Atreides.",
+        "quantity": 8
+    },
+    {
+        "title": "The Three-Body Problem",
+        "isbn": "9780765377067",
+        "publisher": "Chongqing Publishing Group",
+        "authors": ["Liu Cixin"],
+        "categories": ["Science Fiction"],
+        "pub_date": "2008-01-01",
+        "summary": "The first novel in the Remembrance of Earth's Past trilogy.",
+        "quantity": 12
+    },
+    {
+        "title": "To Kill a Mockingbird",
+        "isbn": "9780061120084",
+        "publisher": "J.B. Lippincott & Co.",
+        "authors": ["Harper Lee"],
+        "categories": ["Classic Literature"],
+        "pub_date": "1960-07-11",
+        "summary": "The unforgettable novel of a childhood in a sleepy Southern town.",
+        "quantity": 7
+    },
+    {
+        "title": "1984",
+        "isbn": "9780451524935",
+        "publisher": "Secker & Warburg",
+        "authors": ["George Orwell"],
+        "categories": ["Classic Literature", "Science Fiction"],
+        "pub_date": "1949-06-08",
+        "summary": "Among the seminal texts of the 20th century, Nineteen Eighty-Four is a rare work that grows more haunting as its futuristic purgatory becomes more real.",
+        "quantity": 15
+    },
+    {
+        "title": "Sapiens: A Brief History of Humankind",
+        "isbn": "9780062316097",
+        "publisher": "Harvill Secker",
+        "authors": ["Yuval Noah Harari"],
+        "categories": ["History"],
+        "pub_date": "2011-01-01",
+        "summary": "Explores the ways in which biology and history have defined us and enhanced our understanding of what it means to be 'human'.",
+        "quantity": 20
+    },
+    {
+        "title": "Guns, Germs, and Steel",
+        "isbn": "9780393317552",
+        "publisher": "W. W. Norton & Company",
+        "authors": ["Jared Diamond"],
+        "categories": ["History"],
+        "pub_date": "1997-01-01",
+        "summary": "The Fates of Human Societies.",
+        "quantity": 6
+    },
+    {
+        "title": "Harry Potter and the Sorcerer's Stone",
+        "isbn": "9780590353427",
+        "publisher": "Bloomsbury",
+        "authors": ["J.K. Rowling"],
+        "categories": ["Fantasy"],
+        "pub_date": "1997-06-26",
+        "summary": "Harry Potter has no idea how famous he is.",
+        "quantity": 25
+    },
+    {
+        "title": "The Hobbit",
+        "isbn": "9780547928227",
+        "publisher": "George Allen & Unwin",
+        "authors": ["J.R.R. Tolkien"],
+        "categories": ["Fantasy"],
+        "pub_date": "1937-09-21",
+        "summary": "A timeless classic introduction to the Hobbit Bilbo Baggins.",
+        "quantity": 10
+    },
+    {
+        "title": "Steve Jobs",
+        "isbn": "9781451648539",
+        "publisher": "Simon & Schuster",
+        "authors": ["Walter Isaacson"],
+        "categories": ["Biography"],
+        "pub_date": "2011-10-24",
+        "summary": "The exclusive biography of Steve Jobs.",
+        "quantity": 9
+    },
+    {
+        "title": "A Brief History of Time",
+        "isbn": "9780553380163",
+        "publisher": "Bantam Books",
+        "authors": ["Stephen Hawking"],
+        "categories": ["Science"],
+        "pub_date": "1988-01-01",
+        "summary": "A landmark volume in science writing by one of the great minds of our time.",
+        "quantity": 11
+    },
+    {
+        "title": "Sophie's World",
+        "isbn": "9780425152256",
+        "publisher": "Farrar, Straus and Giroux",
+        "authors": ["Jostein Gaarder"],
+        "categories": ["Philosophy"],
+        "pub_date": "1991-12-05",
+        "summary": "A novel about the history of philosophy.",
+        "quantity": 8
+    },
+    {
+        "title": "The Story of Art",
+        "isbn": "9780714832470",
+        "publisher": "Phaidon Press",
+        "authors": ["E.H. Gombrich"],
+        "categories": ["Art", "History"],
+        "pub_date": "1950-01-01",
+        "summary": "One of the most famous and popular books on art ever written.",
+        "quantity": 4
+    },
+    {
+        "title": "Zero to One",
+        "isbn": "9780804139298",
+        "publisher": "Crown Business",
+        "authors": ["Peter Thiel"],
+        "categories": ["Business"],
+        "pub_date": "2014-09-16",
+        "summary": "Notes on Startups, or How to Build the Future.",
+        "quantity": 14
+    }
+]
