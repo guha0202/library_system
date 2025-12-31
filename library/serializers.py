@@ -43,7 +43,7 @@ class BookSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Book
-        fields = ['id', 'title', 'isbn', 'publisher', 'authors', 'categories', 'publication_date', 'summary', 'quantity', 'user_status']
+        fields = ['id', 'title', 'isbn', 'publisher', 'authors', 'categories', 'publication_date', 'summary', 'quantity', 'user_status', 'cover_image']
 
     def get_user_status(self, obj):
         """
@@ -71,3 +71,17 @@ class BookSerializer(serializers.ModelSerializer):
             return 'AVAILABLE'
         else:
             return 'NO_STOCK'
+
+class BorrowSerializer(serializers.ModelSerializer):
+    book = BookSerializer(read_only=True)
+    is_overdue = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Borrow
+        fields = ['id', 'book', 'borrow_date', 'due_date', 'return_date', 'status', 'is_overdue']
+
+    def get_is_overdue(self, obj):
+        from django.utils import timezone
+        if obj.return_date is None and obj.due_date < timezone.now().date():
+            return True
+        return False

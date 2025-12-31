@@ -49,6 +49,7 @@ class Book(models.Model):
     publication_date = models.DateField(verbose_name="出版日期")
     summary = models.TextField(verbose_name="简介")
     quantity = models.PositiveIntegerField(default=1, verbose_name="库存数量")
+    cover_image = models.ImageField(upload_to='book_covers/', blank=True, null=True, verbose_name="封面图片")
 
     def __str__(self):
         return self.title
